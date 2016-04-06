@@ -195,9 +195,7 @@ In order to leverage the single sign on capabilities described earlier, this top
 </topology>
 ```
 
-You can see that CORS must be enabled for the browser to allow REST API calls from javascript to an endpoint other than the one used to serve this application and to present the cookie as a credential. Therefore, the WebAppSec provider is configured and setup to enable CORS.
-
-Also note that there is no need to do principal mapping in this topology. That is because we did that in the KnoxSSO topology which results in the identity within the token to be the mapped or effective principal. We could also move that principal mapping to each topology that may want map the same IdP identity to different users. This is left up to the admin.
+Since Knox is hosting knoxplorer in this case, there is no need to enable CORS. Therefore, it is not included in the WebAppSec provider. We do however protect the login page from clickjacking by enabling the xframe-options feature.
 
 Troubleshooting
 =======
