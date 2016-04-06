@@ -60,7 +60,7 @@ function getWebHDFSPath() {
   var webhdfs;
   var topo = getParameterByName("topology");
   if (topo === "") {
-    webhdfs = "www.local.com:8443/gateway/sandbox/webhdfs/v1";
+    webhdfs = "www.local.com:8443/gateway/sandbox-apps/webhdfs/v1";
   }
   else {
     webhdfs = topo + "webhdfs/v1";
