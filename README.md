@@ -2,21 +2,24 @@ knoxplorer
 =======
 Browse HDFS through Apache Knox.
 
-A simple demo application that leverages KnoxSSO service and SSOCookie provider to authenticate once and use the SSO cookie for subsequent requests.
+A simple demo application that leverages KnoxSSO service and SSOCookie provider to authenticate once and use the SSO cookie for subsequent requests. This article also illustrates the new application hosting feature in Knox 0.9.0.
 
 ![alt text](knoxplorer.png "KnoXplorer")
 
 Requires python for the SimpleHTTPServer (or you can use another web server).
 
-1. Clone or checkout this project.
-2. Execute start.py or deploy the html and js files to your webserver
-3. Navigate to http://www.local.com:8000/?topology=www.local.com:8443/gateway/sandbox/
+1. Clone or checkout this project inside the {GATEWAY_HOME}/data/applications directory of your Knox installation.
+2. Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer
+2. Navigate to https://www.local.com:8443/gateway/sandbox-apps/knoxplorer/index.html
 
 Login Details and Link
 ========
-The login link in index.html is pointing to the KnoxSSO topology and indicating that the target URL (originalURL) is this application itself. This is an effective way to leverage the SP initiated authentication through a login link.
+The SSOCookieProvider is used to protect access to the knoxplorer application and each of the services that would be consumed by the applications hosted within this topology definition.
 
-https://www.local.com:8443/gateway/knoxsso/api/v1/websso?originalUrl=http://www.local.com:8000?topology=www.local.com:8443/gateway/sandbox&path=/
+SSOCookie provider is configured to redirect any requests that do not present the expected cookie to the following URL:
+https://www.local.com:8443/gateway/knoxsso/api/v1/websso
+
+It adds the actually requested URL as the origninalUrl query parameter in the redirect. This indicates to the KnoxSSO service the URL to which the browser needs to be redirected again following authentication.
 
 It also provides a query parameter for the knoxplorer application that indicates the topology to use as the endpoint for Hadoop cluster access and is currently hardcoded to "sandbox".
 
@@ -40,79 +43,101 @@ In order for the Login Link above to work, we need to have a configured KnoxSSO 
 <topology>
     <gateway>
       <provider>
-          <role>federation</role>
-          <name>pac4j</name>
-          <enabled>true</enabled>
-          <param>
-            <name>pac4j.callbackUrl</name>
-            <value>https://www.local.com:8443/gateway/knoxsso/api/v1/websso</value>
-          </param>
-          <param>
-            <name>saml.keystorePassword</name>
-            <value>knox</value>
-          </param>
-          <param>
-            <name>saml.privateKeyPassword</name>
-            <value>knox</value>
-          </param>
-          <param>
-            <name>saml.keystorePath</name>
-            <value>{GATEWAY_HOME}/knox-0.8.0-SNAPSHOT/data/security/keystores/gateway.jks</value>
-          </param>
-          <param>
-            <name>saml.identityProviderMetadataPath</name>
-            <value>https://dev-122415.oktapreview.com/app/exk5nc5z1xbFKb7nH0h7/sso/saml/metadata</value>
-          </param>
-          <param>
-            <name>saml.serviceProviderMetadataPath</name>
-            <value>sp-metadata.xml</value>
-          </param>
-          <param>
-            <name>saml.serviceProviderEntityId</name>
-            <value>https://www.local.com:8443/gateway/knoxsso/api/v1/websso?pac4jCallback=true&amp;client_name=SAML2Client</value>
-          </param>
+        <role>webappsec</role>
+        <name>WebAppSec</name>
+        <enabled>true</enabled>
+        <param>
+            <name>xframe.options.enabled</name>
+            <value>true</value>
+        </param>
       </provider>
-      <provider>
-          <role>identity-assertion</role>
-          <name>Default</name>
-          <enabled>true</enabled>
-          <param>
-            <name>principal.mapping</name>
-            <value>guest@example.com=guest;</value>
-          </param>
-      </provider>
+        <provider>
+            <role>authentication</role>
+            <name>ShiroProvider</name>
+            <enabled>true</enabled>
+            <param>
+                <name>sessionTimeout</name>
+                <value>30</value>
+            </param>
+            <param>
+                <name>redirectToUrl</name>
+                <value>/gateway/knoxsso/knoxauth/login.html</value>
+            </param>
+            <param>
+                <name>restrictedCookies</name>
+                <value>rememberme,WWW-Authenticate</value>
+            </param>
+            <param>
+                <name>main.ldapRealm</name>
+                <value>org.apache.hadoop.gateway.shirorealm.KnoxLdapRealm</value>
+            </param>
+            <param>
+                <name>main.ldapContextFactory</name>
+                <value>org.apache.hadoop.gateway.shirorealm.KnoxLdapContextFactory</value>
+            </param>
+            <param>
+                <name>main.ldapRealm.contextFactory</name>
+                <value>$ldapContextFactory</value>
+            </param>
+            <param>
+                <name>main.ldapRealm.userDnTemplate</name>
+                <value>uid={0},ou=people,dc=hadoop,dc=apache,dc=org</value>
+            </param>
+            <param>
+                <name>main.ldapRealm.contextFactory.url</name>
+                <value>ldap://localhost:33389</value>
+            </param>    
+            <param>
+                <name>main.ldapRealm.authenticationCachingEnabled</name>
+                <value>false</value>
+            </param>
+            <param>
+                <name>main.ldapRealm.contextFactory.authenticationMechanism</name>
+                <value>simple</value>
+            </param>
+            <param>
+                <name>urls./**</name>
+                <value>authcBasic</value>
+            </param>
+        </provider>
+                <provider>
+            <role>identity-assertion</role>
+            <name>Default</name>
+            <enabled>true</enabled>
+        </provider>
     </gateway>
+
+    <application>
+      <name>knoxauth</name>
+    </application>
+
     <service>
         <role>KNOXSSO</role>
         <param>
-          <name>knoxsso.cookie.secure.only</name>
-          <value>true</value>
-       </param>
-       <param>
-         <name>knoxsso.token.ttl</name>
-         <value>100000</value>
-       </param>
-       <param>
-          <name>knoxsso.redirect.whitelist.regex</name>
-          <value>^https?:\/\/(www\.local\.com|localhost|127\.0\.0\.1|0:0:0:0:0:0:0:1|::1):[0-9].*$</value>
-       </param>
+            <name>knoxsso.cookie.secure.only</name>
+            <value>false</value>
+        </param>
+        <param>
+            <name>knoxsso.token.ttl</name>
+            <value>30000</value>
+        </param>
+        <param>
+           <name>knoxsso.redirect.whitelist.regex</name>
+           <value>^https?:\/\/(www\.local\.com|c6401\.ambari\.apache\.org|localhost|127\.0\.0\.1|0:0:0:0:0:0:0:1|::1):[0-9].*$</value>
+        </param>
     </service>
 </topology>
 ```
 
-This particular KnoxSSO deployment is using the pac4j provider to authenticate via Okta as a SAML IdP. The same type of SAML integration can be done with other providers such as Shibboleth, Keystone, etc. See the pac4j provider documentation for details of other supported providers: http://knox.apache.org/books/knox-0-8-0/user-guide.html#Pac4j+Provider+-+CAS+/+OAuth+/+SAML+/+OpenID+Connect - some examples are OpenId Connect, CAS Server, Twitter, Facebook, etc.
+This particular KnoxSSO deployment is using the Default IDP for form-based SSO authentication against LDAP/AD. This ShiroProvider is used for HTTP Basic Auth credentials against LDAP/AD indentity stores.
 
-You will also notice the KNOXSSO service declaration. Given a successful login by the pac4j provider, the KNOXSSO service will create an SSO cookie that can be used as the proof of authentication to the originalUrl until the cookie or the token within the cookie expires. Docs can be found http://knox.apache.org/books/knox-0-8-0/user-guide.html#KnoxSSO+Setup+and+Configuration - for the KnoxSSO service.
+You will also notice the KNOXSSO service declaration. Given a successful login by the shiro provider, the KNOXSSO service will create an SSO cookie that can be used as the proof of authentication to the originalUrl until the cookie or the token within the cookie expires. Docs can be found http://knox.apache.org/books/knox-0-9-0/user-guide.html#KnoxSSO+Setup+and+Configuration - for the KnoxSSO service.
 
 What may be less clear is that this simple application doesn't actually care about the user identity but the REST API calls to WebHDFS within the knox.js file of this application must provide the SSO cookie on each call. The cookie is verified by the Apache Knox Gateway for each call to ensure that it is trusted, not expired and extracts the identity information for interaction with the Hadoop WebHDFS service.
 
 Please also note the knoxsso.redirect.whitelist.regex parameter in the KNOXSSO service. This semicolon separated list of regex expressions (there is only one in this case) will be used to validate the originalUrl query parameter to ensure that KnoxSSO will only redirect browsers to trusted sites. This is to avoid things like phishing attacks.
 
-Finally, within the identity-assertion provider, we need to map the IdP identity principal to a username that will be acceptable within the Hadoop cluster. In many cases the authenticated principal will be a numeric id or guid. This will need to be mapped to an actual username. In some cases, such as this particular Okta application, you may configure the id representation that the IdP should provide to SPs. I told it to return the users' email address as the Id and I map that to "guest".
-
-We need to identify and build an enterprise principal mapping or lookup facility that would be much more scalable and manageable than mapping every username within the topology file but in the meantime this will do.
-
-## Sandbox Topology:
+## Sandbox-apps Topology:
 The topology that defines the endpoint used to actually access Hadoop resources through the Apache Gateway in this deployment is called sandbox.xml. The following configuration assumes the use of the Hortonworks sandbox VM based Hadoop cluster to enable quick deployment and getting started with Hadoop and app development.
 
 In order to leverage the single sign on capabilities described earlier, this topology much configure the SSOCookie federation provider. This essentially means that the SSO cookie is required in order to access any of the Hadoop endpoints configured within this topology.
@@ -120,15 +145,6 @@ In order to leverage the single sign on capabilities described earlier, this top
 ```
 <topology>
     <gateway>
-      <provider>
-          <role>webappsec</role>
-          <name>WebAppSec</name>
-          <enabled>true</enabled>
-          <param>
-            <name>cors.enabled</name>
-            <value>true</value>
-          </param>
-      </provider>
       <provider>
           <role>federation</role>
           <name>SSOCookieProvider</name>
