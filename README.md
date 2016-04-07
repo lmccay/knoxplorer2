@@ -6,31 +6,28 @@ A simple demo application that leverages KnoxSSO service and SSOCookie provider 
 
 ![alt text](knoxplorer.png "KnoXplorer")
 
-Requires python for the SimpleHTTPServer (or you can use another web server).
-
 1. Clone or checkout this project inside the {GATEWAY_HOME}/data/applications directory of your Knox installation.
-2. Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer
-2. Navigate to https://www.local.com:8443/gateway/sandbox-apps/knoxplorer/index.html
+2. Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer2
+```
+<application>
+    <name>knoxplorer2</name>
+</application>
+```
+
+Navigate to https://c6401.ambari.apache.org:8443/gateway/sandbox-apps/knoxplorer2/index.html
 
 Login Details and Link
 ========
 The SSOCookieProvider is used to protect access to the knoxplorer application and each of the services that would be consumed by the applications hosted within this topology definition.
 
 SSOCookie provider is configured to redirect any requests that do not present the expected cookie to the following URL:
-https://www.local.com:8443/gateway/knoxsso/api/v1/websso
+https://c6401.ambari.apache.org:8443/gateway/knoxsso/api/v1/websso
 
 It adds the actually requested URL as the origninalUrl query parameter in the redirect. This indicates to the KnoxSSO service the URL to which the browser needs to be redirected again following authentication.
 
 It also provides a query parameter for the knoxplorer application that indicates the topology to use as the endpoint for Hadoop cluster access and is currently hardcoded to "sandbox".
 
-Note that the hostnames may need to be changed depending on the browser you are using and/or the SSO IdP that you are using. For instance:
-
-1. Chrome does not like localhost for cookies which are required for KnoxSSO and many SSO IdPs
-2. Okta does not like 127.0.0.1 for the callback URL
-
-For situations like this I have added a phoney domain to /etc/hosts to represent my local machine: "www.local.com" this has worked for me.
-
-*NOTE:* ALL of the URLs in this application and topology examples reference www.local.com as the localhost machine.
+*NOTE:* ALL of the URLs in this application and topology examples reference c6401.ambari.apache.orf as this article assumes testing with an Ambari quickstart cluster with Apache Knox 0.9.0 installed via the shared /vagrant directory.
 
 Apache Knox Configuration
 ========
@@ -151,7 +148,7 @@ In order to leverage the single sign on capabilities described earlier, this top
           <enabled>true</enabled>
           <param>
               <name>sso.authentication.provider.url</name>
-              <value>https://www.local.com:8443/gateway/knoxsso/api/v1/websso</value>
+              <value>https://c6401.ambari.apache.org:8443/gateway/knoxsso/api/v1/websso</value>
           </param>
       </provider>
       <provider>
