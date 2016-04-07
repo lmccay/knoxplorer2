@@ -6,15 +6,14 @@ A simple demo application that leverages KnoxSSO service and SSOCookie provider 
 
 ![alt text](knoxplorer.png "KnoXplorer")
 
-1. Clone or checkout this project inside the {GATEWAY_HOME}/data/applications directory of your Knox installation.
-2. Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer2
+* Clone or checkout this project inside the {GATEWAY_HOME}/data/applications directory of your Knox installation.
+* Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer2
 ```
 <application>
     <name>knoxplorer2</name>
 </application>
 ```
-
-Navigate to https://c6401.ambari.apache.org:8443/gateway/sandbox-apps/knoxplorer2/index.html
+* Navigate to https://c6401.ambari.apache.org:8443/gateway/sandbox-apps/knoxplorer2/index.html
 
 Login Details and Link
 ========
