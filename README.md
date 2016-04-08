@@ -7,7 +7,7 @@ A simple demo application that leverages KnoxSSO service and SSOCookie provider 
 ![alt text](knoxplorer.png "KnoXplorer")
 
 * Clone or checkout this project inside the {GATEWAY_HOME}/data/applications directory of your Knox installation.
-* Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer2
+* Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer2 and change the host in the WEBHDFS service to c6401.ambari.apache.org
 ```
 <application>
     <name>knoxplorer2</name>
