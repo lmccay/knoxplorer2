@@ -2,17 +2,32 @@ knoxplorer
 =======
 Browse HDFS through Apache Knox.
 
-A simple demo application that leverages KnoxSSO service and SSOCookie provider to authenticate once and use the SSO cookie for subsequent requests. This article also illustrates the new application hosting feature in Knox 0.9.0.
+A simple demo application that leverages KnoxSSO service and SSOCookie provider to authenticate once and use the SSO cookie for subsequent requests. This article also illustrates the use of KnoxSSO from Knox Authentication Services and adding custom UIs to the Knox Proxying Services.
 
 ![alt text](knoxplorer.png "KnoXplorer")
 
-* Clone or checkout this project inside the {GATEWAY_HOME}/data/applications directory of your Knox installation.
-* Copy sandbox-apps.xml from {GATEWAY_HOME}/templates and add the application definition for knoxplorer2 and change the host in the WEBHDFS service to c6401.ambari.apache.org
+* Clone or checkout this project to your desired location.
+* Add the following service definition to {GATEWAY\_HOME}/data/services/knoxplorer2/0.1.0
+
 ```
-<application>
-    <name>knoxplorer2</name>
-</application>
+service.xml
+<service role="KNOXPLORER2" name="knoxplorer2" version="0.1.0">
+  <routes>
+    <route path="/knoxplorer2/**"/>
+  </routes>
+</service>
 ```
+
+```
+rewrite.xml
+<rules>
+  <rule dir="IN" name="KNOXPLORER2/knoxplorer/inbound/query" pattern="*://*:*/**/knoxplorer2/{**}?{**}">
+      <rewrite template="{$serviceUrl[KNOXPLORER2]}/{**}?{**}"/>
+  </rule>
+</rules>
+```
+
+* Start the Knoxplorer2 application with the start.py script
 * Navigate to https://c6401.ambari.apache.org:8443/gateway/sandbox-apps/knoxplorer2/index.html
 
 Login Details and Link
@@ -33,7 +48,7 @@ Apache Knox Configuration
 
 ## KnoxSSO Topology:
 
-In order for the Login Link above to work, we need to have a configured KnoxSSO topology in the Knox Gateway instance that we are point to. Below is an example that leverages an Okta application for SSO:
+For authentication, we need to have a configured KnoxSSO topology in the Knox Gateway instance that we are pointing to. Below is an example that leverages our default Form-based IDP for SSO:
 
 ```
 <topology>
@@ -131,10 +146,10 @@ You will also notice the KNOXSSO service declaration. Given a successful login b
 
 What may be less clear is that this simple application doesn't actually care about the user identity but the REST API calls to WebHDFS within the knox.js file of this application must provide the SSO cookie on each call. The cookie is verified by the Apache Knox Gateway for each call to ensure that it is trusted, not expired and extracts the identity information for interaction with the Hadoop WebHDFS service.
 
-Please also note the knoxsso.redirect.whitelist.regex parameter in the KNOXSSO service. This semicolon separated list of regex expressions (there is only one in this case) will be used to validate the originalUrl query parameter to ensure that KnoxSSO will only redirect browsers to trusted sites. This is to avoid things like phishing attacks.
+Please also note the knoxsso.redirect.whitelist.regex parameter in the KNOXSSO service. This semicolon delimited list of regex expressions (there is only one in this case) will be used to validate the originalUrl query parameter to ensure that KnoxSSO will only redirect browsers to trusted sites. This is to avoid things like phishing attacks.
 
-## Sandbox-apps Topology:
-The topology that defines the endpoint used to actually access Hadoop resources through the Apache Gateway in this deployment is called sandbox.xml. The following configuration assumes the use of the Hortonworks sandbox VM based Hadoop cluster to enable quick deployment and getting started with Hadoop and app development.
+## Sandbox Topology:
+The topology that defines the endpoint used to actually access Hadoop resources through the Apache Gateway in this deployment is called sandbox.xml. The following configuration assumes the use of the Apache Ambari Quickstart (https://cwiki.apache.org/confluence/display/AMBARI/Quick+Start+Guide) created Hadoop cluster to enable quick deployment and getting started with Hadoop and app development.
 
 In order to leverage the single sign on capabilities described earlier, this topology much configure the SSOCookie federation provider. This essentially means that the SSO cookie is required in order to access any of the Hadoop endpoints configured within this topology.
 
@@ -191,7 +206,7 @@ In order to leverage the single sign on capabilities described earlier, this top
 </topology>
 ```
 
-Since Knox is hosting knoxplorer in this case, there is no need to enable CORS. Therefore, it is not included in the WebAppSec provider. We do however protect the login page from clickjacking by enabling the xframe-options feature.
+Since Knox is proxying knoxplorer2 in this case, there is no need to enable CORS. Therefore, it is not included in the WebAppSec provider. If it were from a separate origin, we would need to enable CORS for the cookie to be presented by the browser. We do however protect the login page from clickjacking by enabling the xframe-options feature in the knoxsso.xml topology.
 
 Troubleshooting
 =======
